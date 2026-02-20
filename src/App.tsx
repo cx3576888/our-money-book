@@ -1,9 +1,18 @@
 import "./App.css";
 
+import { useRef, useState } from "react";
 import PWABadge from "./PWABadge.tsx";
 
+interface FormDataObj {
+  tabName: string;
+  date: string;
+  item: string;
+  dollar: number;
+  details: string;
+}
+
 const GAS_URL =
-  "https://script.google.com/macros/s/AKfycbxTLO5tvIWT9J4FJrVbfX7HDv-8YPSiZFTiNZYJZBx64ZUNklETFNcM_Rn37hPmYdIa/exec";
+  "https://script.google.com/macros/s/AKfycbyF3IaKDSWf85VMLm0i11Nkjnr4moxxts4MdNSWzo1bTjQXq04ZPGDCyUkKrvmEmsh_/exec";
 
 function getTabName(inputDate: string) {
   if (inputDate) {
@@ -14,29 +23,59 @@ function getTabName(inputDate: string) {
   return `${currentTime.getFullYear()}-${monthString.padStart(2, "0")}`;
 }
 
+function createFormDataObj(form: HTMLFormElement): FormDataObj {
+  const formData = new FormData(form);
+  const inputDate = (formData.get("date") ?? "") as string;
+  return {
+    tabName: getTabName(inputDate),
+    date: inputDate,
+    item: formData.get("item") as string,
+    dollar: Number(formData.get("dollar") as string),
+    details: formData.get("details") as string,
+  };
+}
+
 export default function App() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const oldDataRef = useRef<FormDataObj>({
+    tabName: "",
+    date: "",
+    item: "",
+    dollar: NaN,
+    details: "",
+  });
+
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const inputDate = (formData.get("date") ?? "") as string;
-    const data = {
-      tabName: getTabName(inputDate),
-      date: inputDate.substring(5),
-      title: formData.get("title"),
-      dollar: formData.get("dollar"),
-      details: formData.get("details"),
-    };
-    console.log("hihihi POST data:", data);
+    const form = e.currentTarget;
+    oldDataRef.current = createFormDataObj(form);
     try {
+      setIsSubmitting(true);
       const result = await fetch(GAS_URL, {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(oldDataRef.current),
       });
       console.log("Success!", result);
+
+      // clear fields, but if user already modify a field after click submit, then keep it
+      const newData = createFormDataObj(form);
+      form.reset();
+      form.date.value = newData.date; // never clear date field
+      if (newData.item !== oldDataRef.current.item) {
+        form.item.value = newData.item;
+      }
+      if (newData.dollar !== oldDataRef.current.dollar) {
+        form.dollar.value = newData.dollar;
+      }
+      if (newData.details !== oldDataRef.current.details) {
+        form.details.value = newData.details;
+      }
     } catch (error) {
       console.error("Failed!", error);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -53,10 +92,10 @@ export default function App() {
           />
         </div>
         <div className="form-field">
-          <label htmlFor="title">項目</label>
+          <label htmlFor="item">項目</label>
           <input
-            id="title"
-            name="title"
+            id="item"
+            name="item"
             className="form-field-input"
             type="text"
           />
@@ -80,7 +119,11 @@ export default function App() {
           />
         </div>
         <div className="form-submit-container">
-          <button className="form-submit-btn" type="submit">
+          <button
+            className="form-submit-btn"
+            type="submit"
+            disabled={isSubmitting}
+          >
             送出
           </button>
         </div>
