@@ -1,37 +1,66 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import appLogo from "/favicon.svg";
-import PWABadge from "./PWABadge.tsx";
 import "./App.css";
 
-function App() {
-  const [count, setCount] = useState(0);
+import PWABadge from "./PWABadge.tsx";
+
+export default function App() {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      date: formData.get("date"),
+      title: formData.get("title"),
+      dollar: formData.get("dollar"),
+      details: formData.get("details"),
+    };
+    console.log("hihihi POST data:", data);
+  }
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={appLogo} className="logo" alt="our-money-book logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>our-money-book</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <form className="form-container" onSubmit={handleSubmit}>
+        <div className="form-field">
+          <label htmlFor="date">日期</label>
+          <input
+            id="date"
+            name="date"
+            className="form-field-input"
+            type="date"
+          />
+        </div>
+        <div className="form-field">
+          <label htmlFor="title">項目</label>
+          <input
+            id="title"
+            name="title"
+            className="form-field-input"
+            type="text"
+          />
+        </div>
+        <div className="form-field">
+          <label htmlFor="dollar">花費</label>
+          <input
+            id="dollar"
+            name="dollar"
+            className="form-field-input"
+            type="number"
+          />
+        </div>
+        <div className="form-field">
+          <label htmlFor="details">詳細說明、備註</label>
+          <input
+            id="details"
+            name="details"
+            className="form-field-input"
+            type="text"
+          />
+        </div>
+        <div className="form-submit-container">
+          <button className="form-submit-btn" type="submit">
+            送出
+          </button>
+        </div>
+      </form>
       <PWABadge />
     </>
   );
 }
-
-export default App;
