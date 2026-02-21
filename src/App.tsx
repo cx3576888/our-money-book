@@ -45,6 +45,12 @@ export default function App() {
     details: "",
   });
 
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+    }
+  }
+
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
@@ -81,7 +87,11 @@ export default function App() {
 
   return (
     <>
-      <form className="form-container" onSubmit={handleSubmit}>
+      <form
+        className="form-container"
+        onKeyDown={handleKeyDown}
+        onSubmit={handleSubmit}
+      >
         <div className="form-field">
           <label htmlFor="date">日期</label>
           <input
@@ -107,6 +117,7 @@ export default function App() {
             name="dollar"
             className="form-field-input"
             type="number"
+            inputMode="decimal"
           />
         </div>
         <div className="form-field">

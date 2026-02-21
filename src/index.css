@@ -9,7 +9,7 @@
   line-height: 1;
   color-scheme: light dark;
   color: #242424;
-  background-color: #c9c9c9;
+  background-color: #e2e2e2;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -30,7 +30,7 @@ input {
 
 @media (prefers-color-scheme: dark) {
   :root {
-    color: #c9c9c9;
+    color: #e2e2e2;
     background-color: #242424;
   }
 }

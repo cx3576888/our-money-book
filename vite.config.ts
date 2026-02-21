@@ -12,10 +12,10 @@ export default defineConfig({
       injectRegister: false,
       manifest: {
         name: "our-money-book",
-        short_name: "our-money-book",
-        description: "our-money-book",
-        theme_color: "#ffffff",
-        background_color: "#c9c9c9",
+        short_name: "🦛小幫手",
+        description: "搭配 Google 試算表使用的記帳小工具",
+        theme_color: "#e2e2e2",
+        background_color: "#e2e2e2",
         display: "standalone",
         icons: [
           {
