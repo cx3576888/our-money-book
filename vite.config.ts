@@ -8,20 +8,16 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      includeAssets: ["favicon.ico", "apple-touch-icon.png"],
       injectRegister: false,
-
       manifest: {
         name: "our-money-book",
         short_name: "our-money-book",
         description: "our-money-book",
         theme_color: "#ffffff",
-
+        background_color: "#c9c9c9",
+        display: "standalone",
         icons: [
-          {
-            src: "pwa-64x64.png",
-            sizes: "64x64",
-            type: "image/png",
-          },
           {
             src: "pwa-192x192.png",
             sizes: "192x192",
@@ -33,22 +29,20 @@ export default defineConfig({
             type: "image/png",
           },
           {
-            src: "maskable-icon-512x512.png",
-            sizes: "512x512",
+            src: "apple-touch-icon.png",
+            sizes: "180x180",
             type: "image/png",
-            purpose: "maskable",
+            purpose: "apple touch icon",
           },
         ],
       },
-
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,ico}"],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
       },
-
       devOptions: {
-        enabled: false,
+        enabled: true,
         navigateFallback: "index.html",
         suppressWarnings: true,
         type: "module",
