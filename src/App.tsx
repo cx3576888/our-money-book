@@ -37,6 +37,8 @@ function createFormDataObj(form: HTMLFormElement): FormDataObj {
 
 export default function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitHistory, setSubmitHistory] = useState<Array<string>>([]);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const oldDataRef = useRef<FormDataObj>({
     tabName: "",
     date: "",
@@ -44,6 +46,22 @@ export default function App() {
     dollar: NaN,
     details: "",
   });
+  const iconCounterRef = useRef(0);
+
+  function addHistory(isSuccess: boolean) {
+    if (isSuccess) {
+      let icons = "";
+      for (let i = 0; i <= iconCounterRef.current; i++) {
+        icons += "🦛";
+      }
+      iconCounterRef.current = (iconCounterRef.current + 1) % 3;
+      const succString = `「${oldDataRef.current.item}」新增成功${icons}`;
+      setSubmitHistory((prev) => [succString, ...prev]);
+    } else {
+      const failString = `「${oldDataRef.current.item}」新增失敗！`;
+      setSubmitHistory((prev) => [failString, ...prev]);
+    }
+  }
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter") {
@@ -63,7 +81,8 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(oldDataRef.current),
       });
-      console.log("Success!", result);
+      addHistory(true);
+      setSubmitError(null);
 
       // clear fields, but if user already modify a field after click submit, then keep it
       const newData = createFormDataObj(form);
@@ -79,7 +98,8 @@ export default function App() {
         form.details.value = newData.details;
       }
     } catch (error) {
-      console.error("Failed!", error);
+      addHistory(false);
+      setSubmitError((error as Error).message);
     } finally {
       setIsSubmitting(false);
     }
@@ -129,15 +149,23 @@ export default function App() {
             type="text"
           />
         </div>
-        <div className="form-submit-container">
+        <div className="form-submit-btn-container">
           <button
             className="form-submit-btn"
             type="submit"
             disabled={isSubmitting}
           >
-            送出
+            {isSubmitting ? "送出中..." : "送出"}
           </button>
         </div>
+        <div className="form-submit-history-container">
+          {submitHistory.map((string, i) => (
+            <div key={i} className="form-submit-history">
+              {string}
+            </div>
+          ))}
+        </div>
+        <pre className="form-submit-error-container">{submitError}</pre>
       </form>
       <PWABadge />
     </>
