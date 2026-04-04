@@ -6,13 +6,14 @@ import PWABadge from "./PWABadge.tsx";
 interface FormDataObj {
   tabName: string;
   date: string;
+  displayDate: string;
   item: string;
   dollar: number;
   details: string;
 }
 
 const GAS_URL =
-  "https://script.google.com/macros/s/AKfycbyF3IaKDSWf85VMLm0i11Nkjnr4moxxts4MdNSWzo1bTjQXq04ZPGDCyUkKrvmEmsh_/exec";
+  "https://script.google.com/macros/s/AKfycbxKMuTkS0P_qoLuWgis_7A1DD1daSqTPLz_t3SGpwermrzvyTo6kWIesfLtvoSWFHcP/exec";
 
 function getTabName(inputDate: string) {
   if (inputDate) {
@@ -29,6 +30,7 @@ function createFormDataObj(form: HTMLFormElement): FormDataObj {
   return {
     tabName: getTabName(inputDate),
     date: inputDate,
+    displayDate: inputDate.substring(5),
     item: formData.get("item") as string,
     dollar: Number(formData.get("dollar") as string),
     details: formData.get("details") as string,
@@ -42,6 +44,7 @@ export default function App() {
   const oldDataRef = useRef<FormDataObj>({
     tabName: "",
     date: "",
+    displayDate: "",
     item: "",
     dollar: NaN,
     details: "",
@@ -72,14 +75,24 @@ export default function App() {
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
-    oldDataRef.current = createFormDataObj(form);
+    const currentData = createFormDataObj(form);
+    oldDataRef.current = currentData;
     try {
       setIsSubmitting(true);
+      const payload = {
+        tabName: currentData.tabName,
+        rowData: [
+          currentData.displayDate,
+          currentData.item,
+          currentData.dollar,
+          currentData.details,
+        ],
+      };
       const result = await fetch(GAS_URL, {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(oldDataRef.current),
+        body: JSON.stringify(payload),
       });
       addHistory(true);
       setSubmitError(null);
