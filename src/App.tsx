@@ -11,9 +11,10 @@ interface FormDataObj {
 interface UIForm {
   inputDate: string;
   item: string;
-  payer: PayerType;
   dollar: number;
   details: string;
+  isSplit: boolean;
+  payer: PayerType;
 }
 
 interface GASPayload {
@@ -56,30 +57,32 @@ function createFormDataObj(form: HTMLFormElement): FormDataObj {
   const item = formData.get("item") as string;
   const dollar = Number(formData.get("dollar") as string);
   const details = formData.get("details") as string;
+  const isSplit = formData.get("isSplit") === "on";
+  console.log("hihihi", isSplit);
   const payer = formData.get("payer") as PayerType;
 
   // gasPayload
-  const halfPlus = Math.ceil(dollar / 2);
-  const half = dollar - halfPlus;
+  const payerShouldPay = isSplit ? Math.ceil(dollar / 2) : dollar;
+  const nonPayerShouldPay = dollar - payerShouldPay;
   let p1Paid, p2Paid, p1Owe, p2Owe, p1GiveP2, p2GiveP1;
   if (payer === "p1") {
     p1Paid = dollar;
     p2Paid = 0;
-    p1Owe = halfPlus;
-    p2Owe = half;
+    p1Owe = payerShouldPay;
+    p2Owe = nonPayerShouldPay;
     p1GiveP2 = 0;
-    p2GiveP1 = half;
+    p2GiveP1 = nonPayerShouldPay;
   } else {
     p1Paid = 0;
     p2Paid = dollar;
-    p1Owe = half;
-    p2Owe = halfPlus;
-    p1GiveP2 = half;
+    p1Owe = nonPayerShouldPay;
+    p2Owe = payerShouldPay;
+    p1GiveP2 = nonPayerShouldPay;
     p2GiveP1 = 0;
   }
 
   return {
-    uiForm: { inputDate, item, dollar, details, payer },
+    uiForm: { inputDate, item, dollar, details, isSplit, payer },
     gasPayload: {
       tabName: getTabName(inputDate),
       rowData: [
@@ -106,8 +109,9 @@ export default function App() {
     inputDate: "",
     item: "",
     dollar: NaN,
-    payer: "p1",
     details: "",
+    isSplit: true,
+    payer: "p1",
   });
   const iconCounterRef = useRef(0);
 
@@ -152,6 +156,7 @@ export default function App() {
       const { uiForm: newUiForm } = createFormDataObj(form);
       form.reset();
       form.inputDate.value = newUiForm.inputDate; // never clear inputDate field
+      form.isSplit.checked = newUiForm.isSplit; // never clear isSplit field
       form.payer.value = newUiForm.payer; // never clear payer field
       if (newUiForm.item !== oldUIFormRef.current.item) {
         form.item.value = newUiForm.item;
@@ -187,7 +192,14 @@ export default function App() {
           />
         </div>
         <div className="form-field">
-          <label htmlFor="item">項目</label>
+          <label htmlFor="item">
+            項目（
+            <label>
+              <input type="checkbox" name="isSplit" defaultChecked />
+              <span>平分</span>
+            </label>
+            ）
+          </label>
           <input
             id="item"
             name="item"
