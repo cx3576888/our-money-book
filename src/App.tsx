@@ -4,13 +4,37 @@ import { useRef, useState } from "react";
 import PWABadge from "./PWABadge.tsx";
 
 interface FormDataObj {
-  tabName: string;
-  date: string;
-  displayDate: string;
+  uiForm: UIForm;
+  gasPayload: GASPayload;
+}
+
+interface UIForm {
+  inputDate: string;
   item: string;
+  payer: PayerType;
   dollar: number;
   details: string;
 }
+
+interface GASPayload {
+  tabName: string;
+  rowData: GASRowDataType;
+}
+
+type GASRowDataType = [
+  displayDate: string,
+  item: string,
+  dollar: number,
+  details: string,
+  p1Paid: number,
+  p2Paid: number,
+  p1Owe: number,
+  p2Owe: number,
+  p1GiveP2: number,
+  p2GiveP1: number,
+];
+
+type PayerType = "p1" | "p2";
 
 const GAS_URL =
   "https://script.google.com/macros/s/AKfycbxKMuTkS0P_qoLuWgis_7A1DD1daSqTPLz_t3SGpwermrzvyTo6kWIesfLtvoSWFHcP/exec";
@@ -26,14 +50,51 @@ function getTabName(inputDate: string) {
 
 function createFormDataObj(form: HTMLFormElement): FormDataObj {
   const formData = new FormData(form);
-  const inputDate = (formData.get("date") ?? "") as string;
+
+  // uiForm
+  const inputDate = (formData.get("inputDate") ?? "") as string;
+  const item = formData.get("item") as string;
+  const dollar = Number(formData.get("dollar") as string);
+  const details = formData.get("details") as string;
+  const payer = formData.get("payer") as PayerType;
+
+  // gasPayload
+  const halfPlus = Math.ceil(dollar / 2);
+  const half = dollar - halfPlus;
+  let p1Paid, p2Paid, p1Owe, p2Owe, p1GiveP2, p2GiveP1;
+  if (payer === "p1") {
+    p1Paid = dollar;
+    p2Paid = 0;
+    p1Owe = halfPlus;
+    p2Owe = half;
+    p1GiveP2 = 0;
+    p2GiveP1 = half;
+  } else {
+    p1Paid = 0;
+    p2Paid = dollar;
+    p1Owe = half;
+    p2Owe = halfPlus;
+    p1GiveP2 = half;
+    p2GiveP1 = 0;
+  }
+
   return {
-    tabName: getTabName(inputDate),
-    date: inputDate,
-    displayDate: inputDate.substring(5),
-    item: formData.get("item") as string,
-    dollar: Number(formData.get("dollar") as string),
-    details: formData.get("details") as string,
+    uiForm: { inputDate, item, dollar, details, payer },
+    gasPayload: {
+      tabName: getTabName(inputDate),
+      rowData: [
+        inputDate.substring(5),
+        item,
+        dollar,
+        details,
+        p1Paid,
+        p2Paid,
+        p1Owe,
+        p2Owe,
+        p1GiveP2,
+        p2GiveP1,
+      ],
+    },
   };
 }
 
@@ -41,12 +102,11 @@ export default function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitHistory, setSubmitHistory] = useState<Array<string>>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const oldDataRef = useRef<FormDataObj>({
-    tabName: "",
-    date: "",
-    displayDate: "",
+  const oldUIFormRef = useRef<UIForm>({
+    inputDate: "",
     item: "",
     dollar: NaN,
+    payer: "p1",
     details: "",
   });
   const iconCounterRef = useRef(0);
@@ -58,10 +118,10 @@ export default function App() {
         icons += "🦛";
       }
       iconCounterRef.current = (iconCounterRef.current + 1) % 3;
-      const succString = `「${oldDataRef.current.item}」新增成功${icons}`;
+      const succString = `「${oldUIFormRef.current.item}」新增成功${icons}`;
       setSubmitHistory((prev) => [succString, ...prev]);
     } else {
-      const failString = `「${oldDataRef.current.item}」新增失敗！`;
+      const failString = `「${oldUIFormRef.current.item}」新增失敗！`;
       setSubmitHistory((prev) => [failString, ...prev]);
     }
   }
@@ -75,40 +135,32 @@ export default function App() {
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
-    const currentData = createFormDataObj(form);
-    oldDataRef.current = currentData;
+    const { uiForm, gasPayload } = createFormDataObj(form);
+    oldUIFormRef.current = uiForm;
     try {
       setIsSubmitting(true);
-      const payload = {
-        tabName: currentData.tabName,
-        rowData: [
-          currentData.displayDate,
-          currentData.item,
-          currentData.dollar,
-          currentData.details,
-        ],
-      };
       const result = await fetch(GAS_URL, {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(gasPayload),
       });
       addHistory(true);
       setSubmitError(null);
 
       // clear fields, but if user already modify a field after click submit, then keep it
-      const newData = createFormDataObj(form);
+      const { uiForm: newUiForm } = createFormDataObj(form);
       form.reset();
-      form.date.value = newData.date; // never clear date field
-      if (newData.item !== oldDataRef.current.item) {
-        form.item.value = newData.item;
+      form.inputDate.value = newUiForm.inputDate; // never clear inputDate field
+      form.payer.value = newUiForm.payer; // never clear payer field
+      if (newUiForm.item !== oldUIFormRef.current.item) {
+        form.item.value = newUiForm.item;
       }
-      if (newData.dollar !== oldDataRef.current.dollar) {
-        form.dollar.value = newData.dollar;
+      if (newUiForm.dollar !== oldUIFormRef.current.dollar) {
+        form.dollar.value = newUiForm.dollar;
       }
-      if (newData.details !== oldDataRef.current.details) {
-        form.details.value = newData.details;
+      if (newUiForm.details !== oldUIFormRef.current.details) {
+        form.details.value = newUiForm.details;
       }
     } catch (error) {
       addHistory(false);
@@ -126,10 +178,10 @@ export default function App() {
         onSubmit={handleSubmit}
       >
         <div className="form-field">
-          <label htmlFor="date">日期</label>
+          <label htmlFor="inputDate">日期</label>
           <input
-            id="date"
-            name="date"
+            id="inputDate"
+            name="inputDate"
             className="form-field-input"
             type="date"
           />
@@ -144,7 +196,20 @@ export default function App() {
           />
         </div>
         <div className="form-field">
-          <label htmlFor="dollar">花費</label>
+          <label htmlFor="dollar">
+            花費（
+            <div className="payer-group">
+              <label className="radio-label">
+                <input type="radio" name="payer" value="p1" defaultChecked />
+                <span>言</span>
+              </label>
+              <label className="radio-label">
+                <input type="radio" name="payer" value="p2" />
+                <span>伊</span>
+              </label>
+            </div>
+            ）
+          </label>
           <input
             id="dollar"
             name="dollar"

@@ -17,6 +17,10 @@
   font-size: 16px;
 }
 
+.payer-group {
+  display: inline-block;
+}
+
 .form-submit-btn-container {
   padding: 8px;
   text-align: center;
